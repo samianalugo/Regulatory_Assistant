@@ -1,70 +1,117 @@
-# Getting Started with Create React App
+# Regulatory Report Assistant — Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This repository contains a React frontend that works with a FastAPI backend to process mini regulatory report assistant, extract structured fields (drug, adverse events, severity, outcome), display results, keep history, and translate outcomes.
 
-## Available Scripts
+This file README adds setup details, API examples, database notes, and test instructions so you can run the full stack locally, but i forgot to take screenshots of installing dependencies.
 
-In the project directory, you can run:
+## Repo layout (relevant parts)
 
-### `npm start`
+- `Backend/` — FastAPI backend (Python)
+- `frontend/` — React app (this folder)
+- `reports.db` — SQLite DB (created by the backend in `Backend/reports.db`)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Prerequisites
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Node.js + npm (for frontend)
+- Python 3.10+ (for backend)
 
-### `npm test`
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Quick start (recommended)
 
-### `npm run build`
+1. Start the backend API
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Windows (cmd.exe):
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```cmd
+cd C:\Users\DELL\Desktop\Regulatory_Assistant\Backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+ (bash):
 
-### `npm run eject`
+```bash
+cd ~/Desktop/Regulatory_Assistant/Backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Notes:
+- The backend automatically creates/initializes the SQLite DB (`Backend/reports.db`) when started.
+- If you see CORS errors in the browser, confirm the backend is running on the expected host/port (default is 127.0.0.1:8000).
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+2. Start the frontend
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```bash
+cd C:\Users\DELL\Desktop\Regulatory_Assistant\frontend
+npm install
+npm start
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+The React app will open in your browser (usually http://localhost:3000) and call the backend at http://127.0.0.1:8000 by default.
 
-## Learn More
+## Backend API (endpoints)
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- POST /process-report
+   - Request JSON: { "report": "<text>" }
+   - Response JSON: { "id": int, "drug": str, "adverse_events": [str], "severity": str, "outcome": str }
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- GET /reports
+   - Response JSON: [ { "id": int, "report_text": str, "drug": str, "adverse_events": [str], "severity": str, "outcome": str, "created_at": str }, ... ]
 
-### Code Splitting
+- POST /translate
+   - Request JSON: { "outcome": "recovered", "lang": "fr" }
+   - Supported langs: `fr`, `sw`
+   - Response JSON: { "original": "recovered", "lang": "fr", "translated": "rétabli" }
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Example curl (Windows cmd)
 
-### Analyzing the Bundle Size
+Process a report:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```cmd
+curl -X POST http://127.0.0.1:8000/process-report -H "Content-Type: application/json" -d "{\"report\":\"Patient took DrugX and experienced nausea and recovered\"}"
+```
 
-### Making a Progressive Web App
+Translate outcome:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```cmd
+curl -X POST http://127.0.0.1:8000/translate -H "Content-Type: application/json" -d "{\"outcome\":\"recovered\",\"lang\":\"fr\"}"
+```
 
-### Advanced Configuration
+## Database notes
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+- The backend uses SQLite and creates `Backend/reports.db` automatically when the app starts.
+- If you want to reset the DB, stop the backend and delete `Backend/reports.db`.
 
-### Deployment
+## Tests (backend)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+Run tests from the `Backend/` folder using pytest:
 
-### `npm run build` fails to minify
+```bash
+cd Backend
+.venv\Scripts\activate   # windows
+pytest -q
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+The repository contains unit tests for the extractors, database logic and an end-to-end pipeline test.
+
+## Troubleshooting
+
+- AttributeError: 'NoneType' object has no attribute 'cursor'
+   - Ensure the backend was started (`uvicorn main:app ...`) so the DB is initialized. The backend code initializes the DB on import/start.
+- CORS issues in browser
+   - Confirm frontend and backend hosts/ports match what the frontend expects, or update the allowed origins in `Backend/main.py`.
+
+## Development notes
+
+- Backend code is in `Backend/` (FastAPI). Key files:
+   - `main.py` — fastapi app + router registration
+   - `database.py` — sqlite connection and init
+   - `crud.py` — DB helpers for saving and reading reports
+   - `extractors.py` — text extraction logic
+- Frontend components are in `frontend/src/components/`.
+
