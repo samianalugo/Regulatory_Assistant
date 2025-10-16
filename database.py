@@ -1,35 +1,14 @@
-''' # backend/database.py
-import sqlite3
-
-DB_PATH = "reports.db"
-db_conn = None
-
-def init_db():
-    global db_conn
-    db_conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    cur = db_conn.cursor()
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS reports (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        report_text TEXT NOT NULL,
-        drug TEXT,
-        adverse_events TEXT,
-        severity TEXT,
-        outcome TEXT,
-        created_at TEXT
-    );
-    """)
-    db_conn.commit()
-    return db_conn
-'''
-# backend/database.py
+# database.py
 import os
 import sqlite3
 from datetime import datetime
 
-# Use environment variable DB_PATH, fallback to /tmp/reports.db
-DB_PATH = os.getenv("DB_PATH", "/tmp/reports.db")
+# Use environment variable DB_PATH; default to a writable per-user dir
+DEFAULT_DB_DIR = os.path.join(os.path.expanduser("~"), ".reg_assistant")
+DEFAULT_DB_PATH = os.path.join(DEFAULT_DB_DIR, "reports.db")
+DB_PATH = os.getenv("DB_PATH", DEFAULT_DB_PATH)
 db_conn = None
+
 
 def init_db():
     """
@@ -37,6 +16,11 @@ def init_db():
     """
     global db_conn
     try:
+        # Ensure directory exists
+        db_dir = os.path.dirname(DB_PATH)
+        if db_dir and not os.path.isdir(db_dir):
+            os.makedirs(db_dir, exist_ok=True)
+
         db_conn = sqlite3.connect(DB_PATH, check_same_thread=False)
         cur = db_conn.cursor()
         
@@ -89,6 +73,7 @@ def save_report(report_text, extracted):
     db_conn.commit()
     return cur.lastrowid
 
+
 def get_reports():
     """
     Fetch all reports from the database.
@@ -113,3 +98,30 @@ def get_reports():
             "created_at": row[6]
         })
     return result
+
+
+def check_integrity():
+    """
+    Check whether the DB file exists and run PRAGMA integrity_check.
+    Returns a dict with keys: exists, db_path, integrity (list) or error, and tables (list).
+    """
+    try:
+        exists = os.path.exists(DB_PATH)
+        if not exists:
+            return {"exists": False, "db_path": DB_PATH}
+
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute('PRAGMA integrity_check;')
+        integrity = cur.fetchall()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = [r[0] for r in cur.fetchall()]
+        conn.close()
+        return {
+            "exists": True,
+            "db_path": DB_PATH,
+            "integrity": integrity,
+            "tables": tables,
+        }
+    except Exception as e:
+        return {"exists": True, "db_path": DB_PATH, "error": str(e)}

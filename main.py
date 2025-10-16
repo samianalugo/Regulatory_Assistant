@@ -28,9 +28,31 @@ app.include_router(translate.router, prefix="", tags=["Translate"])
 
 """Serve React build if available, else return JSON health message."""
 
-# Compute absolute paths so the runtime finds build files regardless of CWD
+"""Resolve CRA build directory.
+
+Search order (first existing wins):
+1) BUILD_DIR env var
+2) <repo_root>/frontend/build when running from repo root
+3) <repo_root>/build when service root already is frontend
+"""
+
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-build_dir = os.path.join(ROOT_DIR, "frontend", "build")
+
+candidate_build_dirs = []
+
+# 1) explicit override
+env_build = os.getenv("BUILD_DIR")
+if env_build:
+    candidate_build_dirs.append(env_build)
+
+# 2) repo-root/frontend/build (this file lives at repo root)
+candidate_build_dirs.append(os.path.join(ROOT_DIR, "frontend", "build"))
+
+# 3) repo-root/build (if service root is already frontend)
+candidate_build_dirs.append(os.path.join(ROOT_DIR, "build"))
+
+build_dir = next((p for p in candidate_build_dirs if os.path.isdir(p)), candidate_build_dirs[0])
+
 build_static_dir = os.path.join(build_dir, "static")
 if os.path.isdir(build_static_dir):
     app.mount("/static", StaticFiles(directory=build_static_dir), name="static")

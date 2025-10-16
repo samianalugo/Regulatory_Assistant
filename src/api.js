@@ -1,7 +1,12 @@
 import axios from "axios";
 
 // Base URL of your backend
-const BASE_URL = "http://127.0.0.1:8000";
+// Use same-origin in production; allow override via env for local/dev
+const isBrowser = typeof window !== "undefined";
+const isDev = isBrowser && window.location.hostname === "localhost";
+const BASE_URL =
+  process.env.REACT_APP_API_BASE_URL ||
+  (isDev ? "http://127.0.0.1:8000" : (isBrowser ? window.location.origin : "http://127.0.0.1:8000"));
 
 export const processReport = async (reportText) => {
   try {
