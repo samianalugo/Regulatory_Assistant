@@ -25,4 +25,4 @@ app.include_router(translate.router, prefix="", tags=["Translate"])
 
 @app.get("/")
 def root():
-    return {"message": "Mini Regulatory Report Assistant API is running \ud83d\ude80"}
+    return {"message": "Mini Regulatory Report Assistant API is running"}
