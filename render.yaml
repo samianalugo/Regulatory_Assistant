@@ -3,7 +3,7 @@ services:
     name: regulatory-assistant
     env: python
     buildCommand: cd frontend && npm install && npm run build
-    startCommand: cd Backend && BUILD_DIR=../frontend/build uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: cd Backend && python -m uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
