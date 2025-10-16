@@ -40,3 +40,20 @@ def root():
     if os.path.exists(index_path):
         return FileResponse(index_path)
     return {"message": "Mini Regulatory Report Assistant API is running"}
+
+
+@app.get("/__build_debug")
+def build_debug():
+    build_dir = os.path.join("frontend", "build")
+    info = {"build_dir": os.path.abspath(build_dir)}
+    index_path = os.path.join(build_dir, "index.html")
+    info["index_exists"] = os.path.exists(index_path)
+    files = []
+    if os.path.isdir(build_dir):
+        try:
+            for entry in os.listdir(build_dir)[:50]:
+                files.append(entry)
+        except Exception as e:
+            files.append(f"listing_error: {e}")
+    info["entries_sample"] = files
+    return info
