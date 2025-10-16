@@ -28,15 +28,17 @@ app.include_router(translate.router, prefix="", tags=["Translate"])
 
 """Serve React build if available, else return JSON health message."""
 
-# Mount built frontend static assets if present
-build_static_dir = os.path.join("frontend", "build", "static")
+# Compute absolute paths so the runtime finds build files regardless of CWD
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+build_dir = os.path.join(ROOT_DIR, "frontend", "build")
+build_static_dir = os.path.join(build_dir, "static")
 if os.path.isdir(build_static_dir):
     app.mount("/static", StaticFiles(directory=build_static_dir), name="static")
 
 
 @app.get("/")
 def root():
-    index_path = os.path.join("frontend", "build", "index.html")
+    index_path = os.path.join(build_dir, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
     return {"message": "Mini Regulatory Report Assistant API is running"}
@@ -44,7 +46,6 @@ def root():
 
 @app.get("/__build_debug")
 def build_debug():
-    build_dir = os.path.join("frontend", "build")
     info = {"build_dir": os.path.abspath(build_dir)}
     index_path = os.path.join(build_dir, "index.html")
     info["index_exists"] = os.path.exists(index_path)
