@@ -1,10 +1,16 @@
 # backend/crud.py
 import json
 from datetime import datetime
-from database import db_conn
+import database
+
+def _get_conn():
+    if getattr(database, "db_conn", None) is None:
+        database.init_db()
+    return database.db_conn
 
 def save_report(report_text: str, extracted: dict) -> int:
-    cur = db_conn.cursor()
+    conn = _get_conn()
+    cur = conn.cursor()
     cur.execute("""
         INSERT INTO reports (report_text, drug, adverse_events, severity, outcome, created_at)
         VALUES (?, ?, ?, ?, ?, ?)
@@ -16,11 +22,12 @@ def save_report(report_text: str, extracted: dict) -> int:
         extracted.get("outcome"),
         datetime.utcnow().isoformat()
     ))
-    db_conn.commit()
+    conn.commit()
     return cur.lastrowid
 
 def get_reports():
-    cur = db_conn.cursor()
+    conn = _get_conn()
+    cur = conn.cursor()
     cur.execute("SELECT id, report_text, drug, adverse_events, severity, outcome, created_at FROM reports ORDER BY id DESC")
     rows = cur.fetchall()
     results = []
