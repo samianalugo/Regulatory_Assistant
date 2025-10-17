@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
-from models import ReportRequest, ReportResponse
-from extractors import process_report_text
-from crud import save_report, get_reports
+# import backend modules via the Backend package so imports work
+from Backend.models import ReportRequest, ReportResponse
+from Backend.extractors import process_report_text
+from Backend.crud import save_report, get_reports
 
 
 router = APIRouter()

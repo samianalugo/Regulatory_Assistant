@@ -1,6 +1,7 @@
 # backend/routers/translate.py
 from fastapi import APIRouter, HTTPException
-from models import TranslateRequest
+# Translate router only needs the request model from Backend
+from Backend.models import TranslateRequest
 
 router = APIRouter()
 
