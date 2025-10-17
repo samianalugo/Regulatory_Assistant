@@ -2,7 +2,7 @@ services:
   - type: web
     name: regulatory-assistant
     env: python
-    buildCommand: chmod +x build.sh && ./build.sh
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt && cd frontend && npm install && npm run build
     startCommand: python -m uvicorn Backend.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
