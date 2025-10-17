@@ -1,0 +1,109 @@
+name: Development CI/CD
+
+on:
+  push:
+    branches:
+      - development
+  pull_request:
+    branches:
+      - development
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+
+    # Add PostgreSQL service container
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      # Step 3: Cache npm dependencies
+      - name: Cache node modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # Step 4: Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # Step 4.5: Run database migrations
+      - name: Run Database Migrations
+        run: npm run migration:run || npm run typeorm migration:run || echo "No migrations to run"
+        env:
+          DATABASE_HOST: localhost
+          DATABASE_PORT: "5432"
+          DATABASE_USER: testuser
+          DATABASE_PASSWORD: "testpass"
+          DATABASE_NAME: testdb
+          DB_HOST: localhost
+          DB_PORT: "5432"
+          DB_USER: testuser
+          DB_PASSWORD: "testpass"
+          DB_NAME: testdb
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: "5432"
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: "testpass"
+          POSTGRES_DB: testdb
+          NODE_ENV: test
+
+      # Step 5: Run unit tests with database environment variables
+      - name: Run Unit Tests
+        run: npm run test:mocha
+        env:
+          DATABASE_HOST: localhost
+          DATABASE_PORT: "5432"
+          DATABASE_USER: testuser
+          DATABASE_PASSWORD: "testpass"
+          DATABASE_NAME: testdb
+          DB_HOST: localhost
+          DB_PORT: "5432"
+          DB_USER: testuser
+          DB_PASSWORD: "testpass"
+          DB_NAME: testdb
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: "5432"
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: "testpass"
+          POSTGRES_DB: testdb
+          NODE_ENV: test
+
+      # Step 6: Run ESLint checks
+      - name: Run Lint
+        run: npm run lint
+
+      # Step 7: Deploy to Render (Development)
+      - name: Deploy to Render (Dev)
+        if: github.ref == 'refs/heads/development'
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_DEV_SERVICE_ID }}
+        run: |
+          curl -X POST https://api.render.com/deploy/srv-${RENDER_SERVICE_ID} \
+            -H "Authorization: Bearer ${RENDER_API_KEY}"

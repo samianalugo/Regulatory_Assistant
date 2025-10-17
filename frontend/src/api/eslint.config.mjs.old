@@ -1,0 +1,2 @@
+// Backup of previous eslint.config.mjs
+export * from './eslint.config.mjs';

@@ -1,0 +1,19 @@
+{
+  "extension": ["ts"],
+  "spec": "tests/**/*.spec.ts",
+  "require": ["ts-node/register"],
+  "timeout": 20000,
+  "slow": 1000,
+  "colors": true,
+  "bail": false,
+  "exit": true,
+  "recursive": true,
+  "checkLeaks": false,
+  "fullTrace": true,
+  "reporter": "spec",
+  "loader": "ts-node/esm",
+  "ts-node": {
+    "project": "tsconfig.mocha.json",
+    "esm": true
+  }
+}
