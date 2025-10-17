@@ -2,12 +2,16 @@ services:
   - type: web
     name: regulatory-assistant
     env: python
-    buildCommand: pip install -r Backend/requirements.txt && cd frontend && (test -f package-lock.json && npm ci || npm install) && npm run build
+    buildCommand: pip install -r requirements.txt && cd frontend && (test -f package-lock.json && npm ci || npm install) && npm run build
     startCommand: python -m uvicorn Backend.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: BUILD_DIR
         value: ../frontend/build
+      - key: POETRY_VENV_IN_PROJECT
+        value: "false"
+      - key: POETRY_NO_INTERACTION
+        value: "1"
     plan: free
 
